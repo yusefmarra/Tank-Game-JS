@@ -96,12 +96,12 @@
           var vector = {x:0,y:0};
           vector.x = (this.input.getPos()[0]-this.center.x);
           vector.y = (this.input.getPos()[1]-this.center.y);
-          var center = { x: this.center.x, y: this.center.y-this.size.y/2};
+          var center = { x: this.center.x , y: this.center.y};
           var bullet = new Bullet(vector, center);
           this.game.addEnt(bullet);
           // console.log(vector);
-          console.log(bullet);
-          console.log(center)
+          // console.log(bullet);
+          // console.log(center)
           this.lastFired = newTime;
         }
 
@@ -145,24 +145,51 @@
       } else {
         pos = [0, this.size.y];
       }
-      console.log(pos[0]);
+      //Save our canvas's unrotated state
       ctx.save();
       ctx.translate(this.center.x, this.center.y);
       // Rotate the canvas
       ctx.rotate(this.rotation*Math.PI/180);
-      // Draw the turret
-      ctx.beginPath();
-      ctx.moveTo(0,0)
-      // ctx.lineTo(pos[0], pos[1]);
-      ctx.lineTo(0,-this.size.y);
-      ctx.stroke();
+
       // Draw the 'tank'
       ctx.fillRect(0 - this.size.x/2,
                    0 - this.size.y/2,
                    this.size.x, this.size.y);
+
+      ctx.beginPath();
+      ctx.moveTo(0-this.size.x/2,0-this.size.y/2);
+      ctx.lineTo(0, 0-this.size.y+5);
+      ctx.lineTo(this.size.x/2, -this.size.y/2);
+      ctx.fill();
+
+      //Unrotate the canvas
       ctx.restore();
 
 
+      // Draw the turret
+      // use atan2 to take an difference in coordinates and get radians
+      var atanArgs = {x: pos[0]-this.center.x, y: pos[1]-this.center.y};
+      var radians = Math.atan2(atanArgs.x, atanArgs.y);
+
+      // Use Math to get x and y for the end point of the barrel length 25
+      var x = 25 * Math.sin(radians);
+      var y = 25 * Math.cos(radians);
+
+      //Save the context
+      ctx.save();
+      //Set the barrel width
+      ctx.lineWidth = 5;
+      // Recenter the grid on the player
+      ctx.translate(this.center.x, this.center.y);
+      // ctx.rotate(radians);
+      ctx.beginPath();
+      ctx.moveTo(0,0);
+      //Draw a line to the end point of the barrel
+      ctx.lineTo(x,y);
+      ctx.strokeStyle = '#A3B5B5';
+      ctx.stroke();
+      //restore the context
+      ctx.restore();
     }
   }
 
@@ -189,8 +216,10 @@
       this.center.x += this.velocity.x;
       this.center.y += this.velocity.y;
     },
-    draw: function() {
-
+    draw: function(ctx) {
+      ctx.fillRect(this.center.x - this.size.x/2,
+                      this.center.y - this.size.y/2,
+                      this.size.x, this.size.y)
     }
   };
 
