@@ -11,7 +11,9 @@
     this.gameSize = {x: canvas.width, y: canvas.height};
 
     // "entities" array to hold all the game objects
-    this.ents = [new Player(this, this.gameSize)];
+    var player = new Player(this, this.gameSize);
+    var ai =  new AI(this, this.gameSize, player);
+    this.ents = [player, ai];
 
     //so I can refer to the Game object in other scopes
     var self = this;
@@ -63,11 +65,11 @@
     //Tracks the last time the player fired
     this.lastFired = Date.now();
     this.speed = 5;
-    this.direction = 0;
     //rotation variable from 0 to 359 keeps track of the players orientation
     this.rotation = 0;
     //Need radians for the Math.cos and Math.sin functions
     this.radians = 0;
+    this.health = 100;
   }
 
   Player.prototype = {
@@ -155,6 +157,7 @@
       ctx.fillRect(0 - this.size.x/2,
                    0 - this.size.y/2,
                    this.size.x, this.size.y);
+      // ctx.fillRect(0-this.size.x/2-10)
 
       ctx.beginPath();
       ctx.moveTo(0-this.size.x/2,0-this.size.y/2);
@@ -222,6 +225,167 @@
                       this.size.x, this.size.y)
     }
   };
+
+  function AI(game, gameSize, player) {
+    this.game = game;
+    this.player = player;
+    this.gameSize = gameSize;
+    this.size = {x: 25, y: 25};
+    this.center = { x: Math.random()*gameSize.x/2, y: Math.random()*gameSize.y/2}
+    //Tracks the last time the AI fired
+    this.lastFired = Date.now();
+    this.speed = 5;
+    //rotation variable from 0 to 359 keeps track of the players orientation
+    this.rotation = 0;
+    //Need radians for the Math.cos and Math.sin functions
+    this.radians = 0;
+    this.health = 100;
+  }
+  AI.prototype = {
+    forward: function(){
+      this.center.x = this.center.x + (this.speed * Math.sin(this.radians))
+      this.center.y = this.center.y - (this.speed * Math.cos(this.radians))
+    },
+    reverse: function() {
+      this.center.x = this.center.x - (this.speed * Math.sin(this.radians))
+      this.center.y = this.center.y + (this.speed * Math.cos(this.radians))
+    },
+    rotate: function(degrees) {
+      this.rotation += degrees;
+      if (this.rotation > 359){
+        this.rotation = 0;
+      } else if (this.rotation < 0) {
+        this.rotation = 359;
+      }
+    },
+    update: function() {
+      this.radians = this.rotation * (Math.PI/180)
+
+      var distanceFromPlayer = Math.sqrt(
+              (this.center.x-this.player.center.x)*(this.center.x-this.player.center.x) +
+              (this.center.y-this.player.center.y)*(this.center.y-this.player.center.y)
+            );
+
+      var atanArgs = {x: this.player.center.x-this.center.x,
+                      y: this.player.center.y-this.center.y};
+      //get the radians from the player.
+      var radians = Math.atan2(atanArgs.x, atanArgs.y);
+      // var degrees = radians * (180/Math.PI);
+      var xStep = (10*Math.sin(radians));
+      var yStep = (10*Math.cos(radians));
+      // console.log(xStep, yStep);
+      console.log(this.rotation);
+
+      // Negative X and Y (Top Left)
+      if (xStep < 0 && yStep < 0 && this.rotation > 270) {
+        this.forward();
+      }
+      // Positive X and Negative Y (Top Right)
+      else if (xStep > 0 && yStep < 0 && this.rotation > 0 && this.rotation < 90) {
+        this.forward();
+      }
+      // Negative X and Positive Y (Bottom Left)
+      else if (xStep < 0 && yStep > 0 && this.rotation > 180 && this.rotation <270) {
+        this.forward();
+      }
+      // Positive X and Positive Y (Bottom Right)
+      else if (xStep > 0 && yStep > 0 && this.rotation < 180 && this.rotation > 90) {
+        this.forward();
+      } else {
+
+        // Negative X and Y (Top Left)
+        if (xStep < 0 && yStep < 0) {
+          if (this.rotation < 292 && this.rotation > 152) {
+            this.rotate(5);
+          } else { this.rotate(-5); }
+        }
+        // Positive X and Negative Y (Top Right)
+        else if (xStep > 0 && yStep < 0) {
+          if (this.rotation > 225 || this.rotation < 22) {
+            this.rotate(5);
+          } else { this.rotate(-5); }
+        }
+        // Negative X and Positive Y (Bottom Left)
+        else if (xStep < 0 && yStep > 0) {
+          if (this.rotation > 247 || this.rotation < 45) {
+            this.rotate(-5);
+          } else { this.rotate(5); }
+        }
+        // Positive X and Positive Y (Bottom Right)
+        else if (xStep > 0 && yStep > 0) {
+          if (this.rotation > 292 || this.rotation < 112) {
+            this.rotate(5);
+          } else { this.rotate(-5); }
+        }
+      }
+      // console.log(radians.toFixed(2));
+      // console.log(this.radians.toFixed(2));
+      // if (this.radians.toFixed(2) !== radians.toFixed(2)) {
+      //   this.rotate(1);
+      // }
+
+      //Keep the AI on the screen
+      if (this.center.x - this.size.x/2 < 0) {
+        this.center.x = this.size.x/2;
+      } else if (this.center.x + this.size.x/2 > this.gameSize.x) {
+        this.center.x = this.gameSize.x - this.size.x/2;
+      }
+      if (this.center.y - this.size.x/2 < 0) {
+        this.center.y = this.size.y/2;
+      } else if (this.center.y + this.size.y/2 > this.gameSize.y) {
+        this.center.y = this.gameSize.y - this.size.y/2;
+      }
+    },
+    draw: function(ctx) {
+      //Save our canvas's unrotated state
+      ctx.save();
+      ctx.translate(this.center.x, this.center.y);
+      // Rotate the canvas
+      ctx.rotate(this.rotation*Math.PI/180);
+
+      // Draw the 'tank'
+      ctx.fillRect(0 - this.size.x/2,
+                   0 - this.size.y/2,
+                   this.size.x, this.size.y);
+      // ctx.fillRect(0-this.size.x/2-10)
+
+      //Put a little triangle on the front so we know which way is forward
+      ctx.beginPath();
+      ctx.moveTo(0-this.size.x/2,0-this.size.y/2);
+      ctx.lineTo(0, 0-this.size.y+5);
+      ctx.lineTo(this.size.x/2, -this.size.y/2);
+      ctx.fill();
+
+      //Unrotate the canvas
+      ctx.restore();
+
+      // Draw the turret
+      // use atan2 to take an difference in coordinates and get radians
+      var atanArgs = {x: this.player.center.x-this.center.x,
+                      y: this.player.center.y-this.center.y};
+      var radians = Math.atan2(atanArgs.x, atanArgs.y);
+
+      // Use Math to get x and y for the end point of the barrel length 25
+      var x = 25 * Math.sin(radians);
+      var y = 25 * Math.cos(radians);
+
+      //Save the context
+      ctx.save();
+      //Set the barrel width
+      ctx.lineWidth = 5;
+      // Recenter the grid on the player
+      ctx.translate(this.center.x, this.center.y);
+      // ctx.rotate(radians);
+      ctx.beginPath();
+      ctx.moveTo(0,0);
+      //Draw a line to the end point of the barrel
+      ctx.lineTo(x,y);
+      ctx.strokeStyle = '#A3B5B5';
+      ctx.stroke();
+      //restore the context
+      ctx.restore();
+    }
+  }
 
   // Input object tracks input from the keyboard and mouse
   function Input() {
