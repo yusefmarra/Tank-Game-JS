@@ -14,7 +14,7 @@
     var player = new Player(this, this.gameSize);
     var ai =  new AI(this, this.gameSize, player);
     this.ents = [player, ai];
-
+    this.bullets = []
     //so I can refer to the Game object in other scopes
     var self = this;
 
@@ -41,14 +41,15 @@
       // ctx.fillRect(30,30,50,50)
       ctx.clearRect(0,0,this.gameSize.x, this.gameSize.y)
       for (var i = 0; i < this.ents.length; i++) {
-        // ctx.save();
         this.ents[i].draw(ctx);
-        // ctx.restore();
       }
     },
     //Add an entity to the entity array
     addEnt: function(ent){
       this.ents.push(ent);
+    },
+    addBullet: function(bullet) {
+      this.bullets.push(bullet);
     }
 
   };
@@ -98,12 +99,9 @@
           var vector = {x:0,y:0};
           vector.x = (this.input.getPos()[0]-this.center.x);
           vector.y = (this.input.getPos()[1]-this.center.y);
-          var center = { x: this.center.x , y: this.center.y};
+          var center = { x: this.center.x, y: this.center.y};
           var bullet = new Bullet(vector, center);
           this.game.addEnt(bullet);
-          // console.log(vector);
-          // console.log(bullet);
-          // console.log(center)
           this.lastFired = newTime;
         }
 
@@ -209,7 +207,8 @@
     this.velocity = { x: (dx/distance)*this.speed,
                       y: (dy/distance)*this.speed }
 
-
+    this.center = { x: this.center.x+this.velocity.x,
+                    y: this.center.y+this.velocity.y}
 
 
   };
@@ -231,7 +230,7 @@
     this.player = player;
     this.gameSize = gameSize;
     this.size = {x: 25, y: 25};
-    this.center = { x: Math.random()*gameSize.x/2, y: Math.random()*gameSize.y/2}
+    this.center = { x: Math.random()*gameSize.x, y: Math.random()*gameSize.y}
     //Tracks the last time the AI fired
     this.lastFired = Date.now();
     this.speed = 5;
