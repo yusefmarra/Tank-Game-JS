@@ -13,7 +13,10 @@
     // "entities" array to hold all the game objects
     var player = new Player(this, this.gameSize);
     var ai =  new AI(this, this.gameSize, player);
-    this.ents = [player, ai];
+    var ob1 = new Obstacle(this.gameSize, this);
+    var ob2 = new Obstacle(this.gameSize, this);
+    var ob3 = new Obstacle(this.gameSize, this);
+    this.ents = [player, ai, ob1, ob2, ob3];
     this.bullets = []
     //so I can refer to the Game object in other scopes
     var self = this;
@@ -101,7 +104,6 @@
       }
       //Fire a bullet if the mouse is being pressed.
       if (this.input.isDown('mouse')) {
-
         // test if the player has fired too recently
         var newTime = Date.now();
         if (newTime - this.lastFired > 500) {
@@ -174,6 +176,7 @@
       }
       //Save our canvas's unrotated state
       ctx.save();
+      ctx.fillStyle = 'black';
       ctx.translate(this.center.x, this.center.y);
       // Rotate the canvas
       ctx.rotate(this.rotation*Math.PI/180);
@@ -246,6 +249,7 @@
       this.center.y += this.velocity.y;
     },
     draw: function(ctx) {
+      ctx.fillStyle = 'black';
       ctx.fillRect(this.center.x - this.size.x/2,
                       this.center.y - this.size.y/2,
                       this.size.x, this.size.y)
@@ -371,7 +375,7 @@
         // console.log(this.health);
       }
       if (this.health <= 0){
-        this.game.ents.splice(this.game.ents.indexOf(this, 1));
+        this.game.ents.splice(this.game.ents.indexOf(this),1);
         // console.log(this.game.ents);
       }
       // console.log(this.health);
@@ -391,6 +395,7 @@
     draw: function(ctx) {
       //Save our canvas's unrotated state
       ctx.save();
+      ctx.fillStyle = 'black';
       ctx.translate(this.center.x, this.center.y);
       // Rotate the canvas
       ctx.rotate(this.rotation*Math.PI/180);
@@ -438,10 +443,35 @@
       ctx.restore();
     }
   }
-  // 
-  // function Obstacle(){
-  //   this.size = { x: }
-  // }
+
+  function Obstacle(gameSize, game){
+    this.game = game;
+    this.size = { x: Math.random()*gameSize.x/10, y: Math.random()*gameSize.y/10 };
+    this.color = 'blue';
+    this.center = { x: Math.random()*gameSize.x, y: Math.random()*gameSize.y}
+    this.rotation = Math.random()*350;
+  }
+
+  Obstacle.prototype = {
+    update: function(){
+      if (collidingWithBullets(this, this.game.bullets)) {
+        //do Nothing, we're just making sure the bullets dont pass through
+      }
+    },
+    draw: function(ctx) {
+      ctx.fillStyle = this.color;
+      ctx.save();
+      ctx.translate(this.center.x, this.center.y);
+      // Rotate the canvas
+      ctx.rotate(this.rotation*Math.PI/180);
+
+      // Draw the Obstacle
+      ctx.fillRect(0 - this.size.x/2,
+                   0 - this.size.y/2,
+                   this.size.x, this.size.y);
+      ctx.restore();
+    }
+  }
 
   // Input object tracks input from the keyboard and mouse
   function Input() {
