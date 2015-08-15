@@ -32,8 +32,12 @@
   Game.prototype = {
     //Call the update function on every entity
     update: function() {
+      // console.log(this.ents);
       for (var i = 0; i < this.ents.length; i++) {
         this.ents[i].update();
+      }
+      for (var i = 0; i < this.bullets.length; i++) {
+        this.bullets[i].update()
       }
     },
     //Call the draw function on every entity
@@ -42,6 +46,9 @@
       ctx.clearRect(0,0,this.gameSize.x, this.gameSize.y)
       for (var i = 0; i < this.ents.length; i++) {
         this.ents[i].draw(ctx);
+      }
+      for (var i = 0; i < this.bullets.length; i++) {
+        this.bullets[i].draw(ctx);
       }
     },
     //Add an entity to the entity array
@@ -59,6 +66,7 @@
     this.gameSize = gameSize;
     //the instance of the game.
     this.game = game;
+    // this.ai = this.game.ents[1];
     this.size = {x:25,y:25};
     this.center = { x: gameSize.x/2, y: gameSize.y/2}
     //Input object has a 'keys' dict and an 'isDown' function for getting pressed keys
@@ -75,6 +83,7 @@
 
   Player.prototype = {
     update: function() {
+
       //converty the rotation to radians for forward and reverse movement
       this.radians = this.rotation * (Math.PI/180)
       // call the proper function based on input
@@ -101,7 +110,7 @@
           vector.y = (this.input.getPos()[1]-this.center.y);
           var center = { x: this.center.x, y: this.center.y};
           var bullet = new Bullet(vector, center);
-          this.game.addEnt(bullet);
+          this.game.addBullet(bullet);
           this.lastFired = newTime;
         }
 
@@ -116,6 +125,23 @@
         this.center.y = this.size.y/2;
       } else if (this.center.y + this.size.y/2 > this.gameSize.y) {
         this.center.y = this.gameSize.y - this.size.y/2;
+      }
+
+      for (var i = 0; i < this.game.ents.length; i++) {
+        if (colliding(this, this.game.ents[i])) {
+          this.reverse()
+        }
+      }
+
+      // console.log(collidingWithBullets(this, this.game.bullets));
+      // debugger;
+      if (collidingWithBullets(this, this.game.bullets)) {
+        this.health -= 10;
+        // console.log(this.health);
+      }
+      if (this.health <= 0){
+        // console.log(this);
+        this.game.ents.splice(this.game.ents.indexOf(this),1);
       }
     },
 
@@ -137,6 +163,7 @@
         this.rotation = 359;
       }
     },
+
     //Draw function for putting the tank on the screen.
     draw: function(ctx){
       var pos = []
@@ -258,6 +285,20 @@
       }
     },
     update: function() {
+      //See if the AI can fire
+      //If it can, it does.
+      var newTime = Date.now();
+      if (newTime - this.lastFired > 1000) {
+        var vector = {x:0,y:0};
+        vector.x = (this.player.center.x-this.center.x);
+        vector.y = (this.player.center.y-this.center.y);
+        var center = { x: this.center.x, y: this.center.y};
+        var bullet = new Bullet(vector, center);
+        this.game.addBullet(bullet);
+        this.lastFired = newTime;
+      }
+
+
       this.radians = this.rotation * (Math.PI/180)
 
       var distanceFromPlayer = Math.sqrt(
@@ -273,8 +314,9 @@
       var xStep = (10*Math.sin(radians));
       var yStep = (10*Math.cos(radians));
       // console.log(xStep, yStep);
-      console.log(this.rotation);
+      // console.log(this.rotation);
 
+      //THIS IS THE AI'S ARTIFICIAL RETARDEDNESS
       // Negative X and Y (Top Left)
       if (xStep < 0 && yStep < 0 && this.rotation > 270) {
         this.forward();
@@ -317,11 +359,22 @@
           } else { this.rotate(-5); }
         }
       }
-      // console.log(radians.toFixed(2));
-      // console.log(this.radians.toFixed(2));
-      // if (this.radians.toFixed(2) !== radians.toFixed(2)) {
-      //   this.rotate(1);
-      // }
+      for (var i = 0; i < this.game.ents.length; i++) {
+        if (colliding(this, this.game.ents[i])) {
+          this.reverse()
+        }
+      }
+      // console.log(collidingWithBullets(this, this.game.bullets));
+
+      if (collidingWithBullets(this, this.game.bullets)) {
+        this.health -= 10;
+        // console.log(this.health);
+      }
+      if (this.health <= 0){
+        this.game.ents.splice(this.game.ents.indexOf(this, 1));
+        // console.log(this.game.ents);
+      }
+      // console.log(this.health);
 
       //Keep the AI on the screen
       if (this.center.x - this.size.x/2 < 0) {
@@ -385,6 +438,10 @@
       ctx.restore();
     }
   }
+  // 
+  // function Obstacle(){
+  //   this.size = { x: }
+  // }
 
   // Input object tracks input from the keyboard and mouse
   function Input() {
@@ -415,9 +472,26 @@
 
   var drawRect = function(ctx, ent) {
     ctx.fillRect(ent.center.x - ent.size.x/2,
-                    ent.center.y - ent.size.y/2,
-                    ent.size.x, ent.size.y)
+                 ent.center.y - ent.size.y/2,
+                 ent.size.x, ent.size.y)
   };
+
+  var colliding = function(ent1, ent2) {
+    return !(ent1 === ent2 ||
+             ent1.center.x + ent1.size.x/2 < ent2.center.x - ent2.size.x/2 ||
+             ent1.center.y + ent1.size.y/2 < ent2.center.y - ent2.size.y/2 ||
+             ent1.center.x - ent1.size.x/2 > ent2.center.x + ent2.size.x/2 ||
+             ent1.center.y - ent1.size.y/2 > ent2.center.y + ent2.size.y/2);
+  }
+  var collidingWithBullets = function(entity, bulletsArray) {
+    for (var i = 0; i < bulletsArray.length; i++) {
+      if (colliding(entity, bulletsArray[i])) {
+        bulletsArray.splice(i,1);
+        return true;
+      }
+    }
+    return false;
+  }
 
   window.onload = function() {
     var game = new Game();
