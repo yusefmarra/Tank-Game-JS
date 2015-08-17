@@ -11,12 +11,12 @@
     this.gameSize = {x: canvas.width, y: canvas.height};
 
     // "entities" array to hold all the game objects
-    var player = new Player(this, this.gameSize);
-    var ai =  new AI(this, this.gameSize, player);
+    this.player = new Player(this, this.gameSize);
+    this.ai =  new AI(this, this.gameSize, this.player);
     var ob1 = new Obstacle(this.gameSize, this);
     var ob2 = new Obstacle(this.gameSize, this);
     var ob3 = new Obstacle(this.gameSize, this);
-    this.ents = [player, ai, ob1, ob2, ob3];
+    this.ents = [ob1, ob2, ob3, this.player, this.ai ];
     this.bullets = []
     //so I can refer to the Game object in other scopes
     var self = this;
@@ -45,13 +45,28 @@
     },
     //Call the draw function on every entity
     draw: function() {
-      // ctx.fillRect(30,30,50,50)
       ctx.clearRect(0,0,this.gameSize.x, this.gameSize.y)
       for (var i = 0; i < this.ents.length; i++) {
         this.ents[i].draw(ctx);
       }
       for (var i = 0; i < this.bullets.length; i++) {
         this.bullets[i].draw(ctx);
+      }
+      // Draw the Player and AI's health on the screen
+      ctx.font = "35px Serif"
+      ctx.fillStyle = 'red';
+      ctx.fillText("AI: " + this.ai.health, 675, 25)
+      ctx.fillText("Player: " + this.player.health, 5, 25)
+
+      //This tests for win conditions and draws the proper text
+      if (this.player.health <= 0) {
+        ctx.fillStyle = "red";
+        ctx.font = "60px Serif";
+        ctx.fillText("YOU FUCKING LOST!", this.gameSize.x/6, this.gameSize.y/2);
+      } else if (this.ai.health <= 0) {
+        ctx.fillStyle = "red";
+        ctx.font = "60px Serif";
+        ctx.fillText("YOU FUCKING WON!", this.gameSize.x/6, this.gameSize.y/2);
       }
     },
     //Add an entity to the entity array
@@ -86,7 +101,6 @@
 
   Player.prototype = {
     update: function() {
-
       //converty the rotation to radians for forward and reverse movement
       this.radians = this.rotation * (Math.PI/180)
       // call the proper function based on input
@@ -168,6 +182,7 @@
 
     //Draw function for putting the tank on the screen.
     draw: function(ctx){
+
       var pos = []
       if (this.input.getPos()) {
         pos = this.input.getPos();
@@ -289,19 +304,6 @@
       }
     },
     update: function() {
-      //See if the AI can fire
-      //If it can, it does.
-      var newTime = Date.now();
-      if (newTime - this.lastFired > 1000) {
-        var vector = {x:0,y:0};
-        vector.x = (this.player.center.x-this.center.x);
-        vector.y = (this.player.center.y-this.center.y);
-        var center = { x: this.center.x, y: this.center.y};
-        var bullet = new Bullet(vector, center);
-        this.game.addBullet(bullet);
-        this.lastFired = newTime;
-      }
-
 
       this.radians = this.rotation * (Math.PI/180)
 
@@ -391,8 +393,24 @@
       } else if (this.center.y + this.size.y/2 > this.gameSize.y) {
         this.center.y = this.gameSize.y - this.size.y/2;
       }
+
+      //See if the AI can fire
+      //If it can, it does.
+      var newTime = Date.now();
+      if (newTime - this.lastFired > 1000) {
+        var vector = {x:0,y:0};
+        vector.x = (this.player.center.x-this.center.x);
+        vector.y = (this.player.center.y-this.center.y);
+        var center = { x: this.center.x, y: this.center.y};
+        var bullet = new Bullet(vector, center);
+        this.game.addBullet(bullet);
+        this.lastFired = newTime;
+      }
+
     },
     draw: function(ctx) {
+
+
       //Save our canvas's unrotated state
       ctx.save();
       ctx.fillStyle = 'black';
@@ -441,12 +459,16 @@
       ctx.stroke();
       //restore the context
       ctx.restore();
+
+
+
     }
   }
 
   function Obstacle(gameSize, game){
     this.game = game;
-    this.size = { x: Math.random()*gameSize.x/10, y: Math.random()*gameSize.y/10 };
+    var rand = Math.random()*gameSize.x/10
+    this.size = { x: rand, y: rand };
     this.color = 'blue';
     this.center = { x: Math.random()*gameSize.x, y: Math.random()*gameSize.y}
     this.rotation = Math.random()*350;
@@ -525,5 +547,9 @@
 
   window.onload = function() {
     var game = new Game();
+    var resetBtn = document.getElementById('reset');
+    resetBtn.addEventListener('click', function(){
+      game = new Game();
+    })
   };
 })();
