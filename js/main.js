@@ -22,14 +22,19 @@
     var self = this;
 
     // This function gets executed every 'frame'
-    function tick() {
-      self.update();
-      self.draw(ctx, this.gameSize);
-      //javascript thing to make sure it runs at a consistent speed across all computers
-      requestAnimationFrame(tick);
-    }
-    // call tick the first time on instantiation
-    tick();
+    loadSound('Gun_Shot.wav', function(shootSound){
+      self.shootSound = shootSound;
+      var tick = function() {
+        self.update();
+        self.draw(ctx, this.gameSize);
+        //javascript thing to make sure it runs at a consistent speed across all computers
+        requestAnimationFrame(tick);
+      };
+      // call tick the first time on instantiation
+      tick();
+    })
+
+
   };
 
   Game.prototype = {
@@ -128,6 +133,8 @@
           var bullet = new Bullet(vector, center);
           this.game.addBullet(bullet);
           this.lastFired = newTime;
+          this.game.shootSound.load();
+          this.game.shootSound.play();
         }
 
       }
@@ -405,6 +412,8 @@
         var bullet = new Bullet(vector, center);
         this.game.addBullet(bullet);
         this.lastFired = newTime;
+        this.game.shootSound.load();
+        this.game.shootSound.play();
       }
 
     },
@@ -466,10 +475,11 @@
   }
 
   function Obstacle(gameSize, game){
+    var colors = ['orange', 'black', 'grey', 'green', 'pink']
     this.game = game;
     var rand = Math.random()*gameSize.x/10
     this.size = { x: rand, y: rand };
-    this.color = 'blue';
+    this.color = colors[(Math.random()*5).toFixed(0)];
     this.center = { x: Math.random()*gameSize.x, y: Math.random()*gameSize.y}
     this.rotation = Math.random()*350;
   }
@@ -482,16 +492,10 @@
     },
     draw: function(ctx) {
       ctx.fillStyle = this.color;
-      ctx.save();
-      ctx.translate(this.center.x, this.center.y);
-      // Rotate the canvas
-      ctx.rotate(this.rotation*Math.PI/180);
-
       // Draw the Obstacle
-      ctx.fillRect(0 - this.size.x/2,
-                   0 - this.size.y/2,
-                   this.size.x, this.size.y);
-      ctx.restore();
+      ctx.fillRect(this.center.x - this.size.x/2,
+                   this.center.y - this.size.y/2,
+                   this.size.x, this.size.y)
     }
   }
 
@@ -543,6 +547,15 @@
       }
     }
     return false;
+  }
+  var loadSound = function(url, callback) {
+    var loaded = function() {
+      callback(sound);
+      sound.removeEventListener('canplaythrough', loaded)
+    }
+    var sound = new Audio(url);
+    sound.addEventListener('canplaythrough', loaded);
+    sound.load();
   }
 
   window.onload = function() {
