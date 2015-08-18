@@ -1,4 +1,6 @@
 /* add custom styles */
-body {
+img {
   /*background: black;*/
+  position: absolute;
+  top: -55px;
 }

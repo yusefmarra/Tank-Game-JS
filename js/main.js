@@ -16,14 +16,14 @@
     var ob1 = new Obstacle(this.gameSize, this);
     var ob2 = new Obstacle(this.gameSize, this);
     var ob3 = new Obstacle(this.gameSize, this);
-    this.ents = [ob1, ob2, ob3, this.player, this.ai ];
+    this.ents = [ob1, ob2, ob3, this.player, this.ai];
     this.bullets = []
     //so I can refer to the Game object in other scopes
     var self = this;
-
+    this.sounds = [];
     // This function gets executed every 'frame'
-    loadSound('Gun_Shot.wav', function(shootSound){
-      self.shootSound = shootSound;
+    loadSound('Gun_Shot.wav', function(gunSound){
+      self.gunSound= gunSound;
       var tick = function() {
         self.update();
         self.draw(ctx, this.gameSize);
@@ -61,6 +61,7 @@
       ctx.font = "35px Serif"
       ctx.fillStyle = 'red';
       ctx.fillText("AI: " + this.ai.health, 675, 25)
+      ctx.fillStyle = 'blue';
       ctx.fillText("Player: " + this.player.health, 5, 25)
 
       //This tests for win conditions and draws the proper text
@@ -69,7 +70,7 @@
         ctx.font = "60px Serif";
         ctx.fillText("YOU FUCKING LOST!", this.gameSize.x/6, this.gameSize.y/2);
       } else if (this.ai.health <= 0) {
-        ctx.fillStyle = "red";
+        ctx.fillStyle = "blue";
         ctx.font = "60px Serif";
         ctx.fillText("YOU FUCKING WON!", this.gameSize.x/6, this.gameSize.y/2);
       }
@@ -80,8 +81,10 @@
     },
     addBullet: function(bullet) {
       this.bullets.push(bullet);
-    }
+    },
+    intro: function() {
 
+    }
   };
 
   // Define the Player object.
@@ -133,8 +136,8 @@
           var bullet = new Bullet(vector, center);
           this.game.addBullet(bullet);
           this.lastFired = newTime;
-          this.game.shootSound.load();
-          this.game.shootSound.play();
+          // this.game.gunSound.load();
+          // this.game.gunSound.play();
         }
 
       }
@@ -198,7 +201,7 @@
       }
       //Save our canvas's unrotated state
       ctx.save();
-      ctx.fillStyle = 'black';
+      ctx.fillStyle = 'blue';
       ctx.translate(this.center.x, this.center.y);
       // Rotate the canvas
       ctx.rotate(this.rotation*Math.PI/180);
@@ -239,7 +242,7 @@
       ctx.moveTo(0,0);
       //Draw a line to the end point of the barrel
       ctx.lineTo(x,y);
-      ctx.strokeStyle = '#A3B5B5';
+      ctx.strokeStyle = 'black';
       ctx.stroke();
       //restore the context
       ctx.restore();
@@ -412,8 +415,8 @@
         var bullet = new Bullet(vector, center);
         this.game.addBullet(bullet);
         this.lastFired = newTime;
-        this.game.shootSound.load();
-        this.game.shootSound.play();
+        // this.game.gunSound.load();
+        // this.game.gunSound.play();
       }
 
     },
@@ -422,7 +425,7 @@
 
       //Save our canvas's unrotated state
       ctx.save();
-      ctx.fillStyle = 'black';
+      ctx.fillStyle = 'red';
       ctx.translate(this.center.x, this.center.y);
       // Rotate the canvas
       ctx.rotate(this.rotation*Math.PI/180);
@@ -464,7 +467,7 @@
       ctx.moveTo(0,0);
       //Draw a line to the end point of the barrel
       ctx.lineTo(x,y);
-      ctx.strokeStyle = '#A3B5B5';
+      ctx.strokeStyle = 'black';
       ctx.stroke();
       //restore the context
       ctx.restore();
@@ -475,11 +478,11 @@
   }
 
   function Obstacle(gameSize, game){
-    var colors = ['orange', 'black', 'grey', 'green', 'pink']
+    var colors = ['orange', 'black', 'grey', 'green']
     this.game = game;
-    var rand = Math.random()*gameSize.x/10
+    var rand = Math.random()*gameSize.x/10 + 25
     this.size = { x: rand, y: rand };
-    this.color = colors[(Math.random()*5).toFixed(0)];
+    this.color = 'grey'; //colors[(Math.random()*4).toFixed(0)];
     this.center = { x: Math.random()*gameSize.x, y: Math.random()*gameSize.y}
     this.rotation = Math.random()*350;
   }
@@ -503,6 +506,7 @@
   function Input() {
     var keyState = {};
     window.onkeydown = function(event) {
+      event.preventDefault();
       keyState[event.keyIdentifier] = true;
     };
     window.onkeyup = function(event) {
@@ -556,6 +560,17 @@
     var sound = new Audio(url);
     sound.addEventListener('canplaythrough', loaded);
     sound.load();
+  }
+  var loadSounds = function(urls, callback) {
+    var loaded = function() {
+      callback(sound);
+      sound.removeEventListener('canplaythrough', loaded)
+    }
+    for (var i = 0; i < urls.length; i++) {
+      var sound = new Audio(urls[i])
+      sound.addEventListener('canplaythrough', loaded);
+      sound.load();
+    }
   }
 
   window.onload = function() {
